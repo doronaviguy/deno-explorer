@@ -2,7 +2,6 @@
 import { h } from "preact";
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { createRequire } from "https://deno.land/std@0.153.0/node/module.ts";
-import { Buffer } from "http://deno.land/x/node_buffer/index.ts";
 import { tw } from "@twind";
 
 const require = createRequire(import.meta.url);
