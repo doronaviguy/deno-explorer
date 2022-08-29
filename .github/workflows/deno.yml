@@ -12,7 +12,13 @@ jobs:
         steps:
             - name: Clone repository
               uses: actions/checkout@v2
-
+            
+            - name: npm Install
+              uses: actions/setup-node@v3
+              with:
+                node-version: 16
+            - run: npm i
+            
             # TODO: add a build step here
 
             - name: Upload to Deno Deploy
