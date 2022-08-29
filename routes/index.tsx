@@ -1,6 +1,7 @@
 /** @jsx h */
 import { h } from "preact";
 import { tw } from "@twind";
+import Search from "../islands/Search.tsx";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         Welcome to `fresh`. Try updating this message in the ./routes/index.tsx
         file, and refresh.
       </p>
+      <Search />
     </div>
   );
 }

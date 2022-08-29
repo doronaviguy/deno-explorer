@@ -25,5 +25,4 @@ jobs:
               uses: denoland/deployctl@v1
               with:
                   project: "ton"
-                  import-map: "import_map.json"
                   entrypoint: "main.ts" # TODO: update entrypoint
