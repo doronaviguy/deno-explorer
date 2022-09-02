@@ -1,11 +1,24 @@
 /** @jsx h */
 import { h } from "preact";
 import { Handlers, PageProps } from "$fresh/server.ts";
-import { createRequire } from "https://deno.land/std@0.153.0/node/module.ts";
 import { tw } from "@twind";
 
-const require = createRequire(import.meta.url);
-const { Cell, parseTransaction, beginCell, fromNano, Address } = require("ton");
+import {
+  Address,
+  beginCell,
+  Cell,
+  fromNano,
+  parseTransaction,
+} from "https://cdn.skypack.dev/ton";
+
+import { format } from "https://cdn.skypack.dev/timeago.js";
+
+import {
+  callTonRPC,
+  getWalletInfo,
+  parseTxDetails,
+strToCell,
+} from "../../utils/utils.ts";
 
 export function addressEllipsis(address: string) {
   if (!address) {
@@ -17,7 +30,19 @@ export function addressEllipsis(address: string) {
     address = address.toFriendly();
   }
 
-  return `${address.substring(0, 6)}....${address.substring(42, 48)}`;
+  return <a  href={`/address/${address}`}> 
+    <span style={`color:#4280f0`} class={tw`opacity-90 hover:opacity-100 hover:underline `} >
+    {address.substring(0, 6)}....{address.substring(42, 48)}</span>
+    </a>;
+}
+
+interface AddressData {
+  wallet: boolean;
+  balance: any;
+  account_state: string;
+  wallet_type: string;
+  seqno: number;
+  transactions: Transaction[];
 }
 
 interface Transaction {
@@ -28,72 +53,147 @@ interface Transaction {
 export const handler: Handlers<Transaction[] | null> = {
   async GET(_, ctx) {
     let address = Address.parse(ctx.params.address);
+    let promises = [];
 
-    const jsonResponse = await fetch(
-      `https://scalable-api.tonwhales.com/jsonRPC`,
-      {
-        body:
-          `{"id":"1","jsonrpc":"2.0","method":"getTransactions","params":{"address":"${address.toString()}","limit":200}}`,
-        method: "post",
-        headers: {
-          accept: "application/json",
-        },
-      },
-    );
+    promises.push(callTonRPC(
+      `{"id":"1","jsonrpc":"2.0","method":"getTransactions","params":{"address":"${address.toString()}","limit":200}}`,
+    ));
 
-    const jsonData = await jsonResponse.json();
+    promises.push(getWalletInfo(address));
+    const responses = await Promise.all(promises);
 
-    const txs = jsonData.result as Transaction[];
+    const txs = responses[0].result as Transaction[];
+    const walletData = responses[1];
+    console.log(walletData);
 
-    return ctx.render(txs);
+    const data = {
+      ... walletData.result,
+      transactions: txs,
+    } as AddressData;
+    return ctx.render(data);
   },
 };
 
 export default function Transactions(
-  { data, params }: PageProps<Transaction[] | null>,
+  { data, params }: PageProps<AddressData | null>,
 ) {
-  let list = data.map((element) => {
-    console.log(element);
-
-    return <div>{Tx(element)}</div>;
+  //console.log(data);
+  
+  // take last tx to get latest
+  const txData = parseTxDetails(data?.transactions[0]);
+  console.log(txData.time);
+  
+  let list = data?.transactions.map((element) => {
+    return <div>{Tx(element, params.address)}</div>;
   });
 
   return (
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
-      <p class={tw`my-2 text-xl5 font-medium`}>
-        {params.address}
+      <p class={tw`my-2 text-5xl font-light`}>
+        Address
       </p>
+      <p class={tw`my-2 text-2xl `}>
+        👾 {params.address}
+      </p>
+      <div class={tw`my-2 text-4l p-1 border-t `} title={new Date(txData.time*1000).toISOString()}>
+        Last Updated: <b >{renderTimeAgo(new Date(txData.time*1000))}</b>
+      </div>
+      <div class={tw`my-2 text-4l p-1 border-t `}>
+        State: <b>{data.account_state}</b>
+      </div>
+      <div class={tw`my-2 text-4l p-1 border-t `}>
+        Value: <b>{fromNano(data.balance).substring(0,6)} 💎</b>
+      </div>
+      <div class={tw`my-2 text-4l p-1 border-t `}>
+        Seqno: <b>{data.seqno}</b>
+      </div>
+      <p class={tw`my-2 text-5xl font-light`}>
+        Transactions
+      </p>
+      <div
+        class={tw`bg-white  dark:bg-gray-800 dark:border-gray-700 p-1 `}
+      >
+        <div class={tw`grid grid-cols-5 content-center  p-1`}>
+          {/* <div>
+            Since
+          </div>
+          <div>
+            Direction
+          </div>
+          <div>
+            Address
+          </div>
+          <div>
+            Value
+          </div>
+          <div>Fee</div> */}
+        </div>
 
-      {list}
+        {list}
+      </div>
     </div>
   );
 }
 
-function Tx(element: any) {
+function Tx(element: any, myAddress: Address) {
   let href = `/tx/` +
-    encodeURI(
+    encodeURIComponent(
       `${element.in_msg.destination.toString()}|${element.transaction_id.lt}|${element.transaction_id.hash}`,
     );
+    console.log(element);
+    
+  let msgValue = element["in_msg"]["value"];
+  let isOutTransaction = element["in_msg"]["source"].length == 0;
+  if (isOutTransaction) {
+    msgValue = element["out_msgs"][0]["value"];
+  }
+  
+  
+  msgValue = fromNano(msgValue);
+
+  const hash = element["transaction_id"]["hash"]
   return (
     <div
-      class={tw`bg-white border- dark:bg-gray-800 dark:border-gray-700 p-1 `}
+      class={tw`bg-white border-t border-l border-r dark:bg-gray-800 dark:border-gray-700 m-1 `}
     >
-      <div class={tw`grid grid-cols-1 content-end space-y-3 align-right`}>
+      <a class={tw`text-cyan-500 p-b-5`} href={href}>
         <div>
-          <a class={tw`text-cyan-500`} href={href}>
-            {new Date(parseInt(element["utime"]) * 1000).toISOString()}
-          </a>
-        </div>
-      </div>
-      <div class={tw`grid grid-cols-4 gap-4 content-start`}>
-        <div>{addressEllipsis(element["in_msg"]["source"])} ➡️</div>
-        <div>Value:{fromNano(element["in_msg"]["value"]).toString()}💎</div>
-        <div>Fee:{fromNano(element["fee"]).toString().substring(0, 6)}💎</div>
-      </div>
+        <div class={tw`opacity-70 hover:opacity-100 `} title={new Date(parseInt(element["utime"]) * 1000).toISOString()}>🔗 <span class={tw`p-1`}></span>
+            {renderTimeAgo(
+              new Date(parseInt(element["utime"]) * 1000).toISOString(),
+            )}
+            <span class={tw`p-5 text-xs`}>hash:{hash}</span>
+          </div>
 
+        </div>
+        <div class={tw`grid grid-cols-1 content-center  p-1`}>
+          <div class={tw`text-align-center`}>
+          {msgValue.toString().substring(
+              0,
+              6,
+            )}💎
+              <span class={tw`p-5`}> </span>
+              {isOutTransaction
+              ? <span class={tw`p-1 text-2m`}>External Message</span>
+              : <span class={tw``}>From</span>}
+              <span class={tw`p-5`}></span>
+              {addressEllipsis(element["in_msg"]["source"] || myAddress)}    
+              <span class={tw`p-5`}></span>
+              ( fee:{fromNano(element["fee"]).toString().substring(0, 6)} 💎 )
+          </div>
+        </div>
+        <div class={tw`bg-gray-100 p-1 content-center  `}>
+            <pre class={tw`overflow-scroll`}>{strToCell(element["in_msg"]["msg_data"]["body"]).toString()}</pre>
+          
+        </div>
+      </a>
       {Actions(element["out_msgs"])}
     </div>
   );
+}
+
+function renderTimeAgo(d: Date) {
+  return format(d);
 }
 
 function Actions(data: Array<any>) {
@@ -101,15 +201,19 @@ function Actions(data: Array<any>) {
     let body = element["msg_data"]["body"];
     const bodyShort = element["msg_data"]["body"].substring(0, 20);
     let cell = beginCell().storeBuffer(Buffer.from(body, "base64")).endCell();
-    console.log(cell.toString());
 
     return (
-      <div class={tw`grid grid-cols-3 content-start p-2  border-`}>
-        <div class={tw`flex`} title={body}>
-          Action: ({cell.toString().substring(0, 20)})
+      <div>
+        <div class={tw`grid grid-cols-2 grid-gap-4 content-center bg-gray-200 p-1 border-t`}>
+          
+            <div class={tw`p-l-5`}>Actions:</div>
+            <div>
+              <div>🎬 {fromNano(element["value"]).substring(0,6)}💎 <span class={tw`p-2`}></span>➡️ {addressEllipsis(element["destination"])} </div>
+              
+            </div>
+            
+          
         </div>
-        <div>➡️</div>
-        <div>{addressEllipsis(element["destination"])}</div>
       </div>
     );
   });

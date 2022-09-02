@@ -5,7 +5,15 @@ import { createRequire } from "https://deno.land/std@0.153.0/node/module.ts";
 import { Buffer } from "http://deno.land/x/node_buffer/index.ts";
 import { tw } from "@twind";
 const require = createRequire(import.meta.url);
-const { Cell, parseTransaction, beginCell, fromNano, Address } = require("ton");
+
+import {
+  Address,
+  beginCell,
+  Cell,
+  fromNano,
+  parseTransaction,
+} from "https://cdn.skypack.dev/ton";
+import { parseTxDetails } from "../../utils/utils.ts";
 
 interface Transaction {
   data: string;
@@ -14,7 +22,8 @@ interface Transaction {
 
 export const handler: Handlers<Transaction | null> = {
   async GET(_, ctx) {
-    const tx = decodeURI(ctx.params.tx);
+    const tx = decodeURIComponent(ctx.params.tx);
+
     const address = Address.parse(tx.split("|")[0]);
     const lt = tx.split("|")[1];
     const hash = Buffer.from(tx.split("|")[2], "base64");
@@ -52,12 +61,11 @@ export const handler: Handlers<Transaction | null> = {
 export default function TransactionDetailed(
   { data, params }: PageProps<Transaction[] | null>,
 ) {
-  const currentContract = data["in_msg"]["destination"];
+  const txData = parseTxDetails(data);
+  console.log(data);
 
-  let boc = Cell.fromBoc(Buffer.from(data.data, "base64"));
-  const wc = Address.parse(currentContract).workchain;
-  let txData = parseTransaction(wc, boc[0].beginParse());
-  console.log("txData", txData);
+  const currentContract = data["in_msg"]["destination"];
+  // console.log("txData", txData);
 
   return (
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
@@ -104,14 +112,18 @@ function Actions(data: Array<any>, txData) {
   let list = data.map((element, i) => {
     let body = txData.outMessages[i].body;
     let action = txData.outMessages[i];
-    console.log(action);
 
     let value = fromNano(action.info.value.coins.toString());
 
     return (
       <div class={tw`grid grid-cols-3 content-start p-2  border-t`}>
         <div class={tw`flex`} title={body}>
-          Action:
+          body:
+        </div>
+        <div>💎</div>
+        <div>destination"</div>
+        <div class={tw`flex`} title={body}>
+          body:
           {body.toString().substring(0, 15)}
         </div>
         <div>➡️ {value.substring(0, 8)} 💎</div>
@@ -122,7 +134,7 @@ function Actions(data: Array<any>, txData) {
 
   return (
     <div>
-      <div class={tw`text-2xl m-4 font-medium gap-y-4`}>Outgoing Actions</div>
+      <div class={tw`text-2xl m-4 font-light gap-y-4`}>Outgoing Actions</div>
       {list}
     </div>
   );
