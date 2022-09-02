@@ -62,7 +62,7 @@ export default function TransactionDetailed(
   { data, params }: PageProps<Transaction[] | null>,
 ) {
   const txData = parseTxDetails(data);
-  console.log(data);
+
 
   const currentContract = data["in_msg"]["destination"];
   // console.log("txData", txData);
@@ -76,12 +76,10 @@ export default function TransactionDetailed(
       </p>
       <p class={tw`my-2 text-6xl m-4 font-medium`}>Transaction</p>
       <div
-        class={tw`grid grid-cols-4 gap-4 content-start bg-white border-b dark:bg-gray-800 dark:border-gray-700`}
+        class={tw`grid grid-cols-4 gap-4 content-start bg-white  dark:bg-gray-800 dark:border-gray-700`}
       >
-        <div>Status :{txData.newStatus}</div>
-        <div>Dest</div>
-        <div>Value</div>
-        <div>Fee</div>
+        
+        
       </div>
       {Tx(data, txData)}
     </div>
@@ -89,53 +87,178 @@ export default function TransactionDetailed(
 }
 
 function Tx(element, txData) {
+  //console.log(element);
+  
   return (
     <div
-      class={tw`bg-white border-b dark:bg-gray-800 dark:border-gray-700 p-1 `}
+      class={tw`bg-white  dark:bg-gray-800 dark:border-gray-700 p-2 `}
     >
-      <div class={tw`space-y-3`}>
-        <div>{new Date(parseInt(element["utime"]) * 1000).toISOString()}</div>
+      <div class={tw`border-t border-l border-r`}>
+        <div>Time: {new Date(parseInt(element["utime"]) * 1000).toISOString()}</div>
       </div>
-      <div class={tw` gap-4 content-start`}>
-        <pre>{ beginCell().storeBuffer(Buffer.from(element["in_msg"]["message"], "base64")).endCell().toString()}</pre>
-        <div>➡️ From :{element["in_msg"]["source"]}</div>
-        <div>💎 Value :{fromNano(element["in_msg"]["value"]).toString()}</div>
-        <div>⛽️ Fee:{fromNano(element["fee"]).toString().substring(0, 6)}</div>
+      <div class={tw`grid grid-cols-4 border-t border-l border-r`}>
+        <div>🔄 State</div>
+        <div>{txData.newStatus}</div> 
+      </div>
+      <div class={tw`border-t border-l border-r`}>
+        <pre class={tw`over-flow-scroll`}>{ beginCell().storeBuffer(Buffer.from(element["in_msg"]["message"], "base64")).endCell().toString()}</pre>
+        <div className={tw`grid grid-cols-4 border-t border-l border-r `}>
+          <div>➡️ From :</div>
+          <div class={tw`col-span-3`}>{element["in_msg"]["source"]}</div>
+        </div>
+        <div className={tw`grid grid-cols-4 border-t border-l border-r `}>
+          <div>💎 Value :</div>
+          <div>{fromNano(element["in_msg"]["value"]).toString()}</div>
+        </div>
+        
+        <div className={tw`grid grid-cols-4 border-t border-l border-r  `}>
+          <div>⛽️ Fee:</div>
+          <div>
+            {fromNano(element["fee"]).toString().substring(0,6)} 💎
+          </div>
+        </div>
+        <div className={tw`grid grid-cols-4 border-t border-l border-r  border-b`}>
+          <div>⛽️ Forward Fee:</div>
+          <div>
+            {fromNano(element["in_msg"]["fwd_fee"]).toString().substring(0,6)} 💎
+          </div>
+        </div>
 
-        {Actions(element["out_msgs"], txData)}
+        {ActionPhase(element, txData)}
+        {ComputePhase(element, txData)}
+        {StoragePhase(element, txData)}
+        {OutMessages(element["out_msgs"], txData, element["utime"])}
       </div>
     </div>
   );
 }
 
-function Actions(data: Array<any>, txData) {
+function OutMessages(data: Array<any>, txData, utime) {
   let list = data.map((element, i) => {
     let body = txData.outMessages[i].body;
     let action = txData.outMessages[i];
-
+    
+    console.log('txData',txData);
+    
+    
     let value = fromNano(action.info.value.coins.toString());
 
     return (
-      <div class={tw`grid grid-cols-3 content-start p-2  border-t`}>
-        <div class={tw`flex`} title={body}>
-          body:
+      <div class={tw`border-t`}>
+        <div class={tw`text-4xl m-4 font-light gap-y-4`}>Action {i+1}</div>
+        <div class={tw`width-3/4`} >
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Source</div>
+            <div class={tw`col-span-3`}>{element["source"]}</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Destination</div>
+            <div class={tw`col-span-3`}>{element["destination"]}</div>
+          </div>
+          
+          <div class={tw`grid grid-cols-4  border-b-1 border-l-1 border-r-1 p-2  `}>
+            <div>Value</div>
+            <div>{value.substring(0, 8)} 💎</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Forward Fee</div>
+            <div>{fromNano(element["fwd_fee"]).substring(0, 8)} 💎</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Bounce</div>
+            <div>{action.info.bounce? "true": "false"}</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Bounced</div>
+            <div>{action.info.bounced ? "true": "false"}</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Message</div>
+            <div>{body.toString().substring(0, 15)}</div>
+          </div>
+          <div class={tw`grid grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Created</div>
+            <div class={tw`col-span-3`}>{new Date(parseInt(utime) * 1000).toISOString()}</div>
+          </div>
+          
+          
+          
         </div>
-        <div>💎</div>
-        <div>destination"</div>
-        <div class={tw`flex`} title={body}>
-          body:
-          {body.toString().substring(0, 15)}
-        </div>
-        <div>➡️ {value.substring(0, 8)} 💎</div>
-        <div>{element["destination"]}</div>
       </div>
+      
     );
   });
 
   return (
     <div>
-      <div class={tw`text-2xl m-4 font-light gap-y-4`}>Outgoing Actions</div>
+      <div class={tw`text-4xl m-4 font-light gap-y-4`}>Outgoing Messages ({txData.outMessagesCount})</div>
       {list}
     </div>
   );
+}
+
+
+function ActionPhase(data: Array<any>, txData) {
+  console.log('actionPhase',txData.update);
+  
+  return <div>
+    <p class={tw`my-2 text-2xl m-4 `}>Action Phase</p>
+      <div class={tw`width-3/4`} >
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Type</div>
+            <div class={tw`col-span-3`}>{txData.description.type}</div>
+          </div>
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>resultCode</div>
+            <div class={tw`col-span-3`}>{txData.actionPhase}</div>
+          </div>
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Old Hash</div>
+            <div class={tw`col-span-3`}>{txData.update.oldHash.toString("base64")}</div>
+          </div>
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>New Hash</div>
+            <div class={tw`col-span-3`}>{txData.update.newHash.toString("base64")}</div>
+          </div>
+        </div>
+  </div>
+}
+
+
+function ComputePhase(data: Array<any>, txData) {
+  console.log('actionPhase',txData.update);
+  
+  return <div>
+    <p class={tw`my-2 text-2xl  m-4 `}>Compute Phase</p>
+      <div class={tw`width-3/4`} >
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Success</div>
+            <div class={tw`col-span-3`}>{txData.description.computePhase.success}</div>
+          </div>
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Exit Code</div>
+            <div class={tw`col-span-3`}>{txData.description.computePhase.exitCode}</div>
+          </div>
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Vm Steps</div>
+            <div class={tw`col-span-3`}>{txData.description.computePhase.vmSteps}</div>
+          </div>
+         
+        </div>
+  </div>
+}
+
+function StoragePhase(data: Array<any>, txData) {
+  console.log('actionPhase',txData.update);
+  
+  return <div>
+    <p class={tw`my-2 text-2xl m-4 `}>Storage Phase</p>
+      <div class={tw`width-3/4`} >
+          <div class={tw`grid border-t-1 grid-cols-4 border-b-1 border-l-1 border-r-1 p-2 `}>
+            <div>Storage Fees Collected</div>
+            <div class={tw`col-span-3`}>{fromNano(txData.description.storagePhase.storageFeesCollected.toString())}</div>
+          </div>
+         
+        </div>
+  </div>
 }
