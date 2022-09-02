@@ -93,20 +93,20 @@ function Tx(element, txData) {
     <div
       class={tw`bg-white  dark:bg-gray-800 dark:border-gray-700 p-2 `}
     >
-      <div class={tw`border-t border-l border-r`}>
+      <div class={tw`border-t border-l border-r p-1`}>
         <div>Time: {new Date(parseInt(element["utime"]) * 1000).toISOString()}</div>
       </div>
-      <div class={tw`grid grid-cols-4 border-t border-l border-r`}>
+      <div class={tw`grid grid-cols-4 border-t border-l border-r p-1`}>
         <div>🔄 State</div>
         <div>{txData.newStatus}</div> 
       </div>
-      <div class={tw`border-t border-l border-r`}>
-        <pre class={tw`over-flow-scroll`}>{ beginCell().storeBuffer(Buffer.from(element["in_msg"]["message"], "base64")).endCell().toString()}</pre>
-        <div className={tw`grid grid-cols-4 border-t border-l border-r `}>
+      <div class={tw`border-t border-l border-r p-1`}>
+        <pre class={tw`overflow-scroll`}>{ beginCell().storeBuffer(Buffer.from(element["in_msg"]["message"], "base64")).endCell().toString()}</pre>
+        <div className={tw`grid grid-cols-4 border-t border-l border-r p-1 `}>
           <div>➡️ From :</div>
           <div class={tw`col-span-3`}>{element["in_msg"]["source"]}</div>
         </div>
-        <div className={tw`grid grid-cols-4 border-t border-l border-r `}>
+        <div className={tw`grid grid-cols-4 border-t border-l border-r p-1 `}>
           <div>💎 Value :</div>
           <div>{fromNano(element["in_msg"]["value"]).toString()}</div>
         </div>
