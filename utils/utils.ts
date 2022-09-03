@@ -1,7 +1,8 @@
 import { Address, Cell, parseTransaction, TonClient } from "https://cdn.skypack.dev/ton";
 import { assertEquals } from "https://deno.land/std@0.153.0/testing/asserts.ts";
 
-const RPC_URL = `https://scalable-api.tonwhales.com/jsonRPC`;
+const RPC_URL = Deno.env.get("RPC") || `https://scalable-api.tonwhales.com/jsonRPC`;
+const TON_CENTER_API = Deno.env.get("TON_CENTER_API")
 const client = new TonClient({
     endpoint: RPC_URL,
 });
@@ -14,6 +15,10 @@ export function parseTxDetails(data: any) {
 }
 
 export function strToCell(b64: string) {
+    if(!b64) {
+        return new Cell();
+    }
+    
     return Cell.fromBoc(Buffer.from(b64, "base64"));
 }
 
@@ -43,7 +48,7 @@ interface walletData {
 export async function getWalletInfo(wallet: Address) {
     const jsonResponse = await fetch("https://toncenter.com/api/v2/getWalletInformation?address=" + decodeURIComponent(wallet.toString()), {
         headers: {
-            "X-Api-Key": "2aaf03fa2764848c89461bba015f4408207828b0e0487d68f9e35c02aaf83300"
+            "X-Api-Key": TON_CENTER_API
         }
     });
     const jsonData = await jsonResponse.json();

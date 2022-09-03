@@ -20,6 +20,8 @@ import {
 strToCell,
 } from "../../utils/utils.ts";
 
+import { Avatar } from "../../components/Avatar.tsx"
+
 export function addressEllipsis(address: string) {
   if (!address) {
     return `...`;
@@ -30,9 +32,14 @@ export function addressEllipsis(address: string) {
     address = address.toFriendly();
   }
 
-  return <a  href={`/address/${address}`}> 
-    <span style={`color:#4280f0`} class={tw`opacity-90 hover:opacity-100 hover:underline `} >
-    {address.substring(0, 6)}....{address.substring(42, 48)}</span>
+  return <a style={`color:#4280f0; display:inline-flex; position:relative; top:6px;`} class={tw`flex opacity-90 hover:opacity-100 hover:underline `} href={`/address/${address}`}>
+    <span>
+    <Avatar address={address} size={25}></Avatar>
+
+    </span>
+    <span style={`padding-left:5px; `} class={tw`p-l-5`}>
+    {address.substring(0, 6)}....{address.substring(42, 48)}
+    </span>
     </a>;
 }
 
@@ -81,11 +88,20 @@ export default function Transactions(
   
   // take last tx to get latest
   const txData = parseTxDetails(data?.transactions[0]);
-  console.log(txData.time);
   
   let list = data?.transactions.map((element) => {
     return <div>{Tx(element, params.address)}</div>;
   });
+
+  let walletSection;
+  if(data?.seqno) {
+    walletSection = (<div><div class={tw`p-2 text-4l p-1 border-t `}>
+    Seqno: <b>{data.seqno}</b>
+  </div>
+  <div class={tw`my-2 text-4l p-1 border-t border-b`}>
+    Wallet Type: <b>{data.wallet_type}</b>
+  </div></div>)
+  }
 
   return (
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
@@ -95,19 +111,27 @@ export default function Transactions(
       <p class={tw`my-2 text-2xl `}>
         👾 {params.address}
       </p>
-      <div class={tw`my-2 text-4l p-1 border-t `} title={new Date(txData.time*1000).toISOString()}>
+      
+      <div class={tw`flex`}>
+        <div >
+          <Avatar address={params.address} size={data.seqno ? 225 : 180}></Avatar>
+        </div>
+        <div class={tw`p-2`}>
+        <div class={tw`p-2 text-4l  `} title={new Date(txData.time*1000).toISOString()}>
         Last Updated: <b >{renderTimeAgo(new Date(txData.time*1000))}</b>
       </div>
-      <div class={tw`my-2 text-4l p-1 border-t `}>
+      <div class={tw`p-2 text-4l  border-t `}>
         State: <b>{data.account_state}</b>
       </div>
-      <div class={tw`my-2 text-4l p-1 border-t `}>
+      <div class={tw`p-2 text-4l  border-t  `}>
         Value: <b>{fromNano(data.balance).substring(0,6)} 💎</b>
       </div>
-      <div class={tw`my-2 text-4l p-1 border-t `}>
-        Seqno: <b>{data.seqno}</b>
+      {walletSection}
+      
+        </div>
       </div>
-      <p class={tw`my-2 text-5xl font-light`}>
+      
+      <p class={tw`p-2 text-5xl font-light`}>
         Transactions
       </p>
       <div
@@ -140,7 +164,6 @@ function Tx(element: any, myAddress: Address) {
     encodeURIComponent(
       `${element.in_msg.destination.toString()}|${element.transaction_id.lt}|${element.transaction_id.hash}`,
     );
-    console.log(element);
     
   let msgValue = element["in_msg"]["value"];
   let isOutTransaction = element["in_msg"]["source"].length == 0;
@@ -183,7 +206,7 @@ function Tx(element: any, myAddress: Address) {
           </div>
         </div>
         <div class={tw`bg-gray-100 p-1 content-center  `}>
-            <pre class={tw`overflow-scroll`}>{strToCell(element["in_msg"]["msg_data"]["body"]).toString()}</pre>
+            <pre class={tw`overflow-scroll max-h-20 `} style={`color:#506f9c`}>{strToCell(element["in_msg"]["msg_data"]["body"]).toString()}</pre>
           
         </div>
       </a>
@@ -199,17 +222,23 @@ function renderTimeAgo(d: Date) {
 function Actions(data: Array<any>) {
   let list = data.map((element) => {
     let body = element["msg_data"]["body"];
-    const bodyShort = element["msg_data"]["body"].substring(0, 20);
-    let cell = beginCell().storeBuffer(Buffer.from(body, "base64")).endCell();
+    
+    let cell = new Cell();
+    if(body) {
+       cell = beginCell().storeBuffer(Buffer.from(body, "base64")).endCell();
+    }
 
     return (
       <div>
-        <div class={tw`grid grid-cols-2 grid-gap-4 content-center bg-gray-200 p-1 border-t`}>
+        <div class={tw`grid grid-cols-4 grid-gap-4 content-center bg-gray-200 p-1 border-t`}>
           
             <div class={tw`p-l-5`}>Actions:</div>
-            <div>
-              <div>🎬 {fromNano(element["value"]).substring(0,6)}💎 <span class={tw`p-2`}></span>➡️ {addressEllipsis(element["destination"])} </div>
-              
+            <div class={tw`col-span-3`}>
+              <span style={``}>
+              🎬 {fromNano(element["value"]).substring(0,6)}💎 
+              </span>
+              <span class={tw`p-2`}></span> 
+              {addressEllipsis(element["destination"])}
             </div>
             
           

@@ -9,11 +9,10 @@ const require = createRequire(import.meta.url);
 import {
   Address,
   beginCell,
-  Cell,
   fromNano,
-  parseTransaction,
 } from "https://cdn.skypack.dev/ton";
 import { parseTxDetails } from "../../utils/utils.ts";
+import { Avatar } from "../../components/Avatar.tsx";
 
 interface Transaction {
   data: string;
@@ -68,18 +67,17 @@ export default function TransactionDetailed(
   // console.log("txData", txData);
 
   return (
-    <div class={tw`p-4 mx-auto max-w-screen-md`}>
-      <p class={tw`my-2 text-2xl m-4 font-medium`}>
-        <a class={tw``} href={`/address/${currentContract}`}>
-          👾{currentContract}
+    <div class={tw`p-4 mx-auto max-w-screen-md `}>
+      <p class={tw`my-2  m-4 font-medium flex opacity-90 hover:opacity-100 hover:underline`}> 
+      <Avatar address={currentContract} size={ 100}></Avatar>
+        <a style={`line-height:100px; font-size:1rem `}  href={`/address/${currentContract}`}>
+          {currentContract}
         </a>
       </p>
-      <p class={tw`my-2 text-6xl m-4 font-medium`}>Transaction</p>
+      <p class={tw`my-2 text-6xl m-4 font-light`}>Transaction</p>
       <div
         class={tw`grid grid-cols-4 gap-4 content-start bg-white  dark:bg-gray-800 dark:border-gray-700`}
       >
-        
-        
       </div>
       {Tx(data, txData)}
     </div>
