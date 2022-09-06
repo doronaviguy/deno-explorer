@@ -3,20 +3,26 @@
 // This file is automatically updated during development when running `dev.ts`.
 
 import * as $0 from "./routes/address/[address].tsx";
-import * as $1 from "./routes/index.tsx";
-import * as $2 from "./routes/tx/[tx].tsx";
+import * as $1 from "./routes/api/TonClient.ts";
+import * as $2 from "./routes/api/bus._ts";
+import * as $3 from "./routes/index.tsx";
+import * as $4 from "./routes/tx/[tx].tsx";
 import * as $$0 from "./islands/Counter.tsx";
-import * as $$1 from "./islands/Search.tsx";
+import * as $$1 from "./islands/Search-header.tsx";
+import * as $$2 from "./islands/Search.tsx";
 
 const manifest = {
   routes: {
     "./routes/address/[address].tsx": $0,
-    "./routes/index.tsx": $1,
-    "./routes/tx/[tx].tsx": $2,
+    "./routes/api/TonClient.ts": $1,
+    "./routes/api/bus._ts": $2,
+    "./routes/index.tsx": $3,
+    "./routes/tx/[tx].tsx": $4,
   },
   islands: {
     "./islands/Counter.tsx": $$0,
-    "./islands/Search.tsx": $$1,
+    "./islands/Search-header.tsx": $$1,
+    "./islands/Search.tsx": $$2,
   },
   baseUrl: import.meta.url,
 };
