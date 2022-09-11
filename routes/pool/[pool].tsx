@@ -8,7 +8,6 @@ import {
   beginCell,
   Cell,
   fromNano,
-  parseTransaction,
 } from "https://cdn.skypack.dev/ton";
 
 import { format } from "https://cdn.skypack.dev/timeago.js";
@@ -41,7 +40,7 @@ interface Transaction {
 
 export const handler: Handlers<Transaction[] | null> = {
   async GET(_, ctx) {
-    let address = Address.parse(ctx.params.address);
+    let address = Address.parse(ctx.params.pool);
     let promises = [];
 
     promises.push(callTonRPC(
@@ -92,7 +91,7 @@ export default function Transactions(
     <div class={tw`p-4 mx-auto max-w-screen-md`}>
       <TopHeader />
       <p class={tw`my-2 text-5xl font-light`}>
-        Address
+        Pool
       </p>
       <p class={tw`my-2 text-2xl `}>
         👾 {params.address}
@@ -126,9 +125,6 @@ export default function Transactions(
       <div
         class={tw`bg-white  dark:bg-gray-800 dark:border-gray-700 p-1 `}
       >
-        <div class={tw`grid grid-cols-5 content-center  p-1`}>
-        </div>
-
         {list}
       </div>
     </div>
@@ -189,12 +185,12 @@ function Tx(element: any, myAddress: Address) {
         </div>
       </a>
       {Actions(element["out_msgs"])}
-      <div class={tw`bg-gray-100 pl-2 pr-2 pb-2 pt-2 content-center flex `}>
+      <div style={`font-size: 60px;`} class={tw`bg-gray-100 pl-2 pr-2 pb-2 pt-2 content-center flex `}>
         ✉️
         <pre
           class={tw`overflow-scroll max-h-20 text-xs m-1 ml-5`}
           style={`color:#506f9c`}
-        >{strToCell(element["in_msg"]["msg_data"]["body"]).toString()}</pre>
+        >{MessageBody(element["in_msg"]["msg_data"]["body"])}</pre>
       </div>
     </div>
   );
