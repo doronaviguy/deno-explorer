@@ -88,13 +88,13 @@ export default function Transactions(
   }
 
   return (
-    <div class={tw`p-4 mx-auto max-w-screen-md`}>
-      <TopHeader />
-      <p class={tw`my-2 text-5xl font-light`}>
+    <div class={tw`p-5 mx-auto max-w-screen-md`}>
+      
+      <p class={tw`my-2 p-5 text-5xl font-light`}>
         Pool
       </p>
       <p class={tw`my-2 text-2xl `}>
-        👾 {params.address}
+        {params.pool}
       </p>
 
       <div class={tw`flex`}>
@@ -127,6 +127,7 @@ export default function Transactions(
       >
         {list}
       </div>
+      <TopHeader />
     </div>
   );
 }
@@ -192,6 +193,7 @@ function Tx(element: any, myAddress: Address) {
           style={`color:#506f9c`}
         >{MessageBody(element["in_msg"]["msg_data"]["body"])}</pre>
       </div>
+      
     </div>
   );
 }

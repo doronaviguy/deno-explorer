@@ -89,9 +89,9 @@ export default function Transactions(
   }
 
   return (
-    <div class={tw`p-4 mx-auto max-w-screen-md`}>
-      <TopHeader />
-      <p class={tw`my-2 text-5xl font-light`}>
+    <div class={tw`p-6  mx-auto max-w-screen-md`}>
+      
+      <p class={tw`my-2 p-5 text-5xl font-light`}>
         Address
       </p>
       <p class={tw`my-2 text-2xl `}>
@@ -131,6 +131,7 @@ export default function Transactions(
 
         {list}
       </div>
+      <TopHeader />
     </div>
   );
 }
@@ -229,6 +230,7 @@ function Actions(data: Array<any>) {
             {ContractAddress(element["destination"])}
           </div>
         </div>
+        
       </div>
     );
   });
