@@ -54,7 +54,7 @@ export const handler: Handlers<Transaction[] | null> = {
     ));
 
     promises.push(callTonRPC(`
-    {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"0:0fca6dbcf53e7c3c544b3b3b63bf186eb8a5c78f63d940b9c8a92a74d7ff5234","method":"get_jetton_data","stack":[]}}
+    {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"${address.toString()}","method":"get_jetton_data","stack":[]}}
     `))
 
     promises.push(getWalletInfo(address));
