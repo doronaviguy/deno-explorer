@@ -119,7 +119,7 @@ export function parseDexBoc(boc: string, encoding : "hex"| "base64") {
     }
     //console.log(cell);
     
-    console.log({op});
+    
     if (op == "19") {
         return parseTonSwap(cell);
     }

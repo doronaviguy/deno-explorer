@@ -8,6 +8,7 @@ import {
   beginCell,
   Cell,
   fromNano,
+toNano,
 } from "https://cdn.skypack.dev/ton";
 
 import { format } from "https://cdn.skypack.dev/timeago.js";
@@ -15,8 +16,9 @@ import { format } from "https://cdn.skypack.dev/timeago.js";
 import {
   callTonRPC,
   getWalletInfo,
+  hexToBn,
+  parseJettonMetadata,
   parseTxDetails,
-  strToCell,
 } from "../../utils/utils.ts";
 
 import { Avatar } from "../../components/Avatar.tsx";
@@ -24,6 +26,7 @@ import { TopHeader } from "../../components/Header.tsx";
 import { ContractAddress } from "../../components/ContractAddress.tsx";
 import { MessageBody } from "../../components/MessageBody.tsx";
 import { Footer } from "../../components/Footer.tsx";
+import { PoolMessageBody } from "../../components/PoolMessageBody.tsx";
 
 interface AddressData {
   wallet: boolean;
@@ -31,6 +34,8 @@ interface AddressData {
   account_state: string;
   wallet_type: string;
   seqno: number;
+  tokenReserves: BN,
+  tonReserves: BN,
   transactions: Transaction[];
 }
 
@@ -41,22 +46,40 @@ interface Transaction {
 
 export const handler: Handlers<Transaction[] | null> = {
   async GET(_, ctx) {
-    let address = Address.parse(ctx.params.pool);
-    let promises = [];
+    const address = Address.parse(ctx.params.pool);
+    const promises = [];
 
     promises.push(callTonRPC(
       `{"id":"1","jsonrpc":"2.0","method":"getTransactions","params":{"address":"${address.toString()}","limit":200}}`,
     ));
 
+    promises.push(callTonRPC(`
+    {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"0:0fca6dbcf53e7c3c544b3b3b63bf186eb8a5c78f63d940b9c8a92a74d7ff5234","method":"get_jetton_data","stack":[]}}
+    `))
+
     promises.push(getWalletInfo(address));
     const responses = await Promise.all(promises);
 
+    let res = responses[1].result;
+      console.log(res);
+      
+    const totalSupply = hexToBn(res.stack[0][1]);
+    
+    const jettonWalletAddressBytes = res.stack[2][1].bytes as string;
+    const tonReserves = hexToBn(res.stack[3][1]);
+    const tokenReserves = hexToBn(res.stack[4][1]);
+    const admin = res.stack[5][1].bytes as string;
+    
     const txs = responses[0].result as Transaction[];
-    const walletData = responses[1];
+    const walletData = responses[2];
+    //const metadata =  parseJettonMetadata(res.stack[6][1].bytes);
 
     const data = {
       ...walletData.result,
+      tonReserves,
+      tokenReserves,
       transactions: txs,
+      
     } as AddressData;
     return ctx.render(data);
   },
@@ -113,8 +136,14 @@ export default function Transactions(
           <div class={tw`p-2 text-4l  border-t `}>
             State: <b>{data.account_state}</b>
           </div>
-          <div class={tw`p-2 text-4l  border-t  `}>
-            Value: <b>{fromNano(data.balance).substring(0, 6)} 💎</b>
+          <div class={tw`p-2 text-4l  border-t `}>
+            Ton Reserves: <b>{fromNano(data.tonReserves)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t `}>
+            Token Reserves: <b>{fromNano(data.tokenReserves)}</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t border-b `}>
+            Value: <b>{fromNano(data?.balance).substring(0, 6)} 💎</b>
           </div>
           {walletSection}
         </div>
@@ -191,9 +220,9 @@ function Tx(element: any, myAddress: Address) {
       <div style={`font-size: 60px;`} class={tw`bg-gray-100 pl-2 pr-2 pb-2 pt-2 content-center flex `}>
         ✉️
         <pre
-          class={tw`overflow-scroll max-h-20 text-xs m-1 ml-5`}
+          class={tw`max-h-30 text-xs  ml-5`}
           style={`color:#506f9c`}
-        >{MessageBody(element["in_msg"]["msg_data"]["body"])}</pre>
+        >{PoolMessageBody(element["in_msg"]["msg_data"]["body"])}</pre>
       </div>
       
     </div>
