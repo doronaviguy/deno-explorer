@@ -12,7 +12,7 @@ export function PoolMessageBody(messageBody: string) {
         str += `${key}: ${parsedData[key]}\n\t`;
     }
   return <pre
-    class={tw`max-h-30 text-xs m-1 ml-5`}
+    class={tw`overflow-scroll min-w-full max-w-20 max-h-20 text-xs m-1 ml-5`}
     style={`color:#506f9c`}
   >{ str }</pre>;
 }
