@@ -9,6 +9,8 @@ const require = createRequire(import.meta.url);
 import { Address, beginCell, fromNano } from "https://cdn.skypack.dev/ton";
 import { parseTxDetails } from "../../utils/utils.ts";
 import { Avatar } from "../../components/Avatar.tsx";
+import { TopHeader } from "../../components/Header.tsx";
+import { Footer } from "../../components/Footer.tsx";
 
 interface Transaction {
   data: string;
@@ -79,6 +81,9 @@ export default function TransactionDetailed(
       >
       </div>
       {Tx(data, txData)}
+
+      <TopHeader />
+      <Footer />
     </div>
   );
 }

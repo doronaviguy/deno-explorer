@@ -10,7 +10,7 @@ export function TopHeader(props: h.JSX.HTMLAttributes<HTMLButtonElement>) {
     left: 0;
     right: 0;
     top: 0;`} class={tw`shadow-lg`}>
-        <a href="/"><span style={`color:#fff; position:relative; top:-20px; font-size:2rem;`} class={tw`p-4 font-family:consals color-white`}>T💎N Bay 🏝</span></a>
+        <a href="/"><span style={`color:#fff; position:relative; top:-5px; font-size:1.9rem;     text-shadow: -1px 2px 3px black;`} class={tw`p-4 font-family: color-white`}>T💎N Bay 🏝</span></a>
         <div class={tw`w-1/3`} style={` margin-left: auto; margin-right: 1rem;`}>
         <Search />
 

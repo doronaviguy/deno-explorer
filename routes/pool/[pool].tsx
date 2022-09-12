@@ -23,6 +23,7 @@ import { Avatar } from "../../components/Avatar.tsx";
 import { TopHeader } from "../../components/Header.tsx";
 import { ContractAddress } from "../../components/ContractAddress.tsx";
 import { MessageBody } from "../../components/MessageBody.tsx";
+import { Footer } from "../../components/Footer.tsx";
 
 interface AddressData {
   wallet: boolean;
@@ -128,6 +129,7 @@ export default function Transactions(
         {list}
       </div>
       <TopHeader />
+      <Footer />
     </div>
   );
 }
