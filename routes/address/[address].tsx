@@ -208,13 +208,13 @@ function renderTimeAgo(d: Date) {
 }
 
 function Actions(data: Array<any>) {
-  let list = data.map((element) => {
-    let body = element["msg_data"]["body"];
+  const list = data.map((element) => {
+    // let body = element["msg_data"]["body"];
 
-    let cell = new Cell();
-    if (body) {
-      cell = beginCell().storeBuffer(Buffer.from(body, "base64")).endCell();
-    }
+    // let cell = new Cell();
+    // if (body) {
+    //   cell = beginCell().storeBuffer(Buffer.from(body, "base64")).endCell();
+    // }
 
     return (
       <div>
