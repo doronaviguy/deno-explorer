@@ -1,5 +1,5 @@
 import { BN } from "https://cdn.skypack.dev/-/bn.js@v5.2.0-RKfg8jZPSvF22WG62NtP/dist=es2019,mode=imports/optimized/bnjs.js";
-import { Address, Cell, parseTransaction, Slice, TonClient } from "https://cdn.skypack.dev/ton";
+import { Address, Cell, fromNano, parseTransaction, Slice, toNano, TonClient } from "https://cdn.skypack.dev/ton";
 import { assertEquals } from "https://deno.land/std@0.153.0/testing/asserts.ts";
 import { Sha256 } from "https://cdn.skypack.dev/@aws-crypto/sha256-js";
 
@@ -37,10 +37,9 @@ export async function callTonRPC(bodyJson: string) {
     return jsonData;
 }
 
-
 export function hexToBn(num: string) {
     return new BN(BigInt(num).toString());
-  }
+}
 
 interface walletData {
     result: {
@@ -62,11 +61,14 @@ export async function getWalletInfo(wallet: Address) {
     return jsonData as walletData;
 }
 
-
+export function nanoToFixed(bn: string, decimals: number) {
+    const dot = bn.indexOf(".");
+    return bn.slice(0, dot + decimals + 1);
+}
 
 export async function parseJettonMetadata(cellB64: string) {
     console.log(cellB64);
-    
+
     let cell = Cell.fromBoc(Buffer.from(cellB64, "base64"))[0];
 
     // metadata is on chain
@@ -93,12 +95,10 @@ export async function parseJettonMetadata(cellB64: string) {
     };
 }
 
-
 const POOL_INIT_COST = 0.15;
 const SNAKE_PREFIX = 0x00;
 const ONCHAIN_CONTENT_PREFIX = 0x00;
 const OFFCHAIN_CONTENT_PREFIX = 0x01;
-
 
 export type JettonMetaDataKeys = "name" | "description" | "image" | "symbol" | "decimals";
 const sha256 = (str: string) => {
@@ -116,8 +116,6 @@ const jettonOnChainMetadataSpec: {
     symbol: "utf8",
     decimals: "utf8",
 };
-
-
 
 export function parseJettonOnchainMetadata(contentSlice: Slice): {
     metadata: { [s in JettonMetaDataKeys]?: string };
@@ -137,8 +135,8 @@ export function parseJettonOnchainMetadata(contentSlice: Slice): {
 
         const sliceToVal = (s: Slice, v: Buffer) => {
             s.toCell().beginParse();
-            console.log("snake prefix ",s.readUint(8).toNumber());
-            
+            console.log("snake prefix ", s.readUint(8).toNumber());
+
             if (s.readUint(8).toNumber() !== SNAKE_PREFIX) throw new Error("Only snake format is supported");
 
             v = Buffer.concat([v, s.readRemainingBytes()]);
@@ -170,8 +168,7 @@ export function parseJettonOnchainMetadata(contentSlice: Slice): {
     };
 }
 
-
 export function cellToString(s: Cell) {
     let data = s.beginParse().readRemaining();
     return data.buffer.slice(0, Math.ceil(data.cursor / 8)).toString();
-  }
+}

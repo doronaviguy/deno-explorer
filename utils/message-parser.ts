@@ -92,14 +92,15 @@ function parseTonSwap(msg: Cell) {
     const op = slice.readUint(32);
     const query = slice.readUint(64);
     const amount = slice.readCoins();
+    const minAmountOut = slice.readCoins();
     // const to = slice.readAddress();
 
     return {
         "#": "SwapTON",
         op: op.toString(16),
         query: query.toString(10),
-        // to,
         amount: fromNano(amount.toString()),
+        minAmountOut: fromNano(minAmountOut.toString()),
     };
 }
 

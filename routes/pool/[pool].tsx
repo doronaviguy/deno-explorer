@@ -8,7 +8,7 @@ import {
   beginCell,
   Cell,
   fromNano,
-toNano,
+  toNano,
 } from "https://cdn.skypack.dev/ton";
 
 import { format } from "https://cdn.skypack.dev/timeago.js";
@@ -17,6 +17,7 @@ import {
   callTonRPC,
   getWalletInfo,
   hexToBn,
+  nanoToFixed,
   parseJettonMetadata,
   parseTxDetails,
 } from "../../utils/utils.ts";
@@ -27,6 +28,7 @@ import { ContractAddress } from "../../components/ContractAddress.tsx";
 import { MessageBody } from "../../components/MessageBody.tsx";
 import { Footer } from "../../components/Footer.tsx";
 import { PoolMessageBody } from "../../components/PoolMessageBody.tsx";
+import { BN } from "https://cdn.skypack.dev/-/bn.js@v5.2.0-RKfg8jZPSvF22WG62NtP/dist=es2019,mode=imports/optimized/bnjs.js";
 
 interface AddressData {
   wallet: boolean;
@@ -34,8 +36,8 @@ interface AddressData {
   account_state: string;
   wallet_type: string;
   seqno: number;
-  tokenReserves: BN,
-  tonReserves: BN,
+  tokenReserves: BN;
+  tonReserves: BN;
   transactions: Transaction[];
 }
 
@@ -55,21 +57,21 @@ export const handler: Handlers<Transaction[] | null> = {
 
     promises.push(callTonRPC(`
     {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"${address.toString()}","method":"get_jetton_data","stack":[]}}
-    `))
+    `));
 
     promises.push(getWalletInfo(address));
     const responses = await Promise.all(promises);
 
     let res = responses[1].result;
-      console.log(res);
-      
+    console.log(res);
+
     const totalSupply = hexToBn(res.stack[0][1]);
-    
+
     const jettonWalletAddressBytes = res.stack[2][1].bytes as string;
     const tonReserves = hexToBn(res.stack[3][1]);
     const tokenReserves = hexToBn(res.stack[4][1]);
     const admin = res.stack[5][1].bytes as string;
-    
+
     const txs = responses[0].result as Transaction[];
     const walletData = responses[2];
     //const metadata =  parseJettonMetadata(res.stack[6][1].bytes);
@@ -79,7 +81,6 @@ export const handler: Handlers<Transaction[] | null> = {
       tonReserves,
       tokenReserves,
       transactions: txs,
-      
     } as AddressData;
     return ctx.render(data);
   },
@@ -93,7 +94,12 @@ export default function Transactions(
   // take last tx to get latest
   const txData = parseTxDetails(data?.transactions[0]);
 
+  let tonVol = new BN(0);
   let list = data?.transactions.map((element) => {
+    const msgValue = extractMessageValue(element);
+    console.log({ msgValue: msgValue.toString() });
+
+    tonVol = tonVol.add(msgValue);
     return <div>{Tx(element, params.address)}</div>;
   });
 
@@ -110,10 +116,15 @@ export default function Transactions(
       </div>
     );
   }
-
+  const price = nanoToFixed(
+    fromNano(
+      data.tokenReserves.mul(new BN(1e9)).div(data?.tonReserves),
+    ),
+    2,
+  );
+  console.log({ price: price.toString() });
   return (
     <div class={tw`p-5 mx-auto max-w-screen-md`}>
-      
       <p class={tw`my-2 p-5 text-5xl font-light`}>
         Pool
       </p>
@@ -134,16 +145,43 @@ export default function Transactions(
             Last Updated: <b>{renderTimeAgo(new Date(txData.time * 1000))}</b>
           </div>
           <div class={tw`p-2 text-4l  border-t `}>
-            State: <b>{data.account_state}</b>
+            <div>
+              State: <b>{data.account_state}</b>
+            </div>
+          </div>
+
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Price :
+            </div>
+            <b>{` 1 💎 = ${price}`}</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Volume:
+            </div>
+            <b>{nanoToFixed(fromNano(tonVol), 2)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex border-b `}>
+            <div class={tw`w-1/2`}>
+              Value:
+            </div>
+            <b>{nanoToFixed(fromNano(data?.balance), 2)} 💎</b>
           </div>
           <div class={tw`p-2 text-4l  border-t `}>
-            Ton Reserves: <b>{fromNano(data.tonReserves)} 💎</b>
+            <b>Reserves</b>
           </div>
-          <div class={tw`p-2 text-4l  border-t `}>
-            Token Reserves: <b>{fromNano(data.tokenReserves)}</b>
+          <div class={tw`p-2 text-4l flex `}>
+            <div class={tw`w-1/2`}>
+              Ton:
+            </div>
+            <b>{nanoToFixed(fromNano(data.tonReserves), 2)} 💎</b>
           </div>
-          <div class={tw`p-2 text-4l  border-t border-b `}>
-            Value: <b>{fromNano(data?.balance).substring(0, 6)} 💎</b>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Token:
+            </div>
+            <b>{nanoToFixed(fromNano(data.tokenReserves), 2)}</b>
           </div>
           {walletSection}
         </div>
@@ -163,19 +201,23 @@ export default function Transactions(
   );
 }
 
-function Tx(element: any, myAddress: Address) {
+function extractMessageValue(element: any) {
+  let msgValue = element["in_msg"]["value"];
+  if (element["in_msg"]["source"].length == 0) {
+    msgValue = element["out_msgs"][0]["value"];
+  }
+  return new BN(msgValue);
+}
+
+function Tx(element: any, filter: string) {
   let href = `/tx/` +
     encodeURIComponent(
       `${element.in_msg.destination.toString()}|${element.transaction_id.lt}|${element.transaction_id.hash}`,
     );
 
-  let msgValue = element["in_msg"]["value"];
   let isOutTransaction = element["in_msg"]["source"].length == 0;
-  if (isOutTransaction) {
-    msgValue = element["out_msgs"][0]["value"];
-  }
 
-  msgValue = fromNano(msgValue);
+  const msgValue = fromNano(extractMessageValue(element));
 
   const hash = element["transaction_id"]["hash"];
   return (
@@ -217,14 +259,16 @@ function Tx(element: any, myAddress: Address) {
         </div>
       </a>
       {Actions(element["out_msgs"])}
-      <div style={`font-size: 60px;`} class={tw`bg-gray-100 pl-2 pr-2 pb-2 pt-2 content-center flex `}>
+      <div
+        style={`font-size: 60px;`}
+        class={tw`bg-gray-100 pl-2 pr-2 pb-2 pt-2 content-center flex `}
+      >
         ✉️
         <pre
           class={tw`max-h-30 text-xs  ml-5`}
           style={`color:#506f9c`}
         >{PoolMessageBody(element["in_msg"]["msg_data"]["body"])}</pre>
       </div>
-      
     </div>
   );
 }
