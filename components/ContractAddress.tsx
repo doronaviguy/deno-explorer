@@ -23,8 +23,21 @@ export function ContractAddress(address: string) {
         <Avatar address={address} size={25}></Avatar>
       </span>
       <span style={`padding-left:5px; `} class={tw`p-l-5`}>
-        {address.substring(0, 6)}....{address.substring(42, 48)}
+        {addressEllipsis(address)}
       </span>
     </a>
   );
+}
+
+export function checkAddressInLocalStorage(address: string) {
+  const addressInLocalStorage = localStorage.getItem(address);
+  return addressInLocalStorage || false;
+}
+
+function addressEllipsis(address: string) {
+  const addressInLocalStorage = checkAddressInLocalStorage(address);
+  if (addressInLocalStorage) {
+    return addressInLocalStorage;
+  }
+  return address.substring(0, 6) + "..." + address.substring(42, 48);
 }

@@ -22,7 +22,10 @@ import {
 
 import { Avatar } from "../../components/Avatar.tsx";
 import { TopHeader } from "../../components/Header.tsx";
-import { ContractAddress } from "../../components/ContractAddress.tsx";
+import {
+  checkAddressInLocalStorage,
+  ContractAddress,
+} from "../../components/ContractAddress.tsx";
 import { MessageBody } from "../../components/MessageBody.tsx";
 import { Footer } from "../../components/Footer.tsx";
 
@@ -91,12 +94,11 @@ export default function Transactions(
 
   return (
     <div class={tw`p-6  mx-auto max-w-screen-md`}>
-      
       <p class={tw`my-2 p-5 text-5xl font-light`}>
         Address
       </p>
       <p class={tw`my-2 text-2xl `}>
-        👾 {params.address}
+        👾 {checkAddressInLocalStorage(params.address)}
       </p>
 
       <div class={tw`flex`}>
@@ -232,7 +234,6 @@ function Actions(data: Array<any>) {
             {ContractAddress(element["destination"])}
           </div>
         </div>
-        
       </div>
     );
   });

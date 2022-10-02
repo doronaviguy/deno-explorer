@@ -59,7 +59,7 @@ function parseJettonTransferNotification(msg: Cell) {
     const minAmountOut = slice.readCoins();
 
     return {
-        "#": subOp.toString() == "12" ? "Swap_Token": "Add_Liquidity",
+        "#": subOp.toString() == "12" ? "Swap_Token" : "Add_Liquidity",
         op: op.toString(16),
         query: query.toString(10),
         from: from?.toFriendly(),
@@ -109,17 +109,21 @@ const OP_EXCESSES = 0xd53276db;
 const OP_BURN = 0x595f07bc;
 const OP_BURN_NOTIFICAITON = 0x7bdd97de;
 
-export function parseDexBoc(boc: string, encoding : "hex"| "base64") {
-    const cell = Cell.fromBoc(Buffer.from(boc, encoding))[0];
-    let op = "na"
+export function parseDexBoc(boc: string, encoding: "hex" | "base64") {
+    if (!boc) {
+        return { body: `x{}` };
+    }
+    let cell;
+    let op;
     try {
+        cell = Cell.fromBoc(Buffer.from(boc, encoding))[0];
+        op = "na";
         op = cell.beginParse().readUint(32).toString(16);
-    } catch(e) {
-        return { body : Buffer.from(boc, encoding).toString("hex")}
+    } catch (e) {
+        return { body: Buffer.from(boc, encoding).toString("hex") };
     }
     //console.log(cell);
-    
-    
+
     if (op == "19") {
         return parseTonSwap(cell);
     }
