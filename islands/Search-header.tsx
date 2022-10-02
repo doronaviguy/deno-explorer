@@ -10,7 +10,7 @@ interface CounterProps {
 export default function Search(props: CounterProps) {
   const [term, setTerm] = useState(props.term);
   return (
-    <form>
+    <div class="input-group relative flex flex-wrap items-stretch w-full mb-4">
       <label
         for="default-search"
         class={tw`mb-2 text-sm font-medium text-gray-900 sr-only dark:text-gray-300`}
@@ -54,7 +54,7 @@ export default function Search(props: CounterProps) {
           }}
           type="search"
           id="default-search"
-          class={tw`block p-1 pl-4 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:w-1/2 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
+          class={tw`block p-1 pl-4 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500  focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`}
           placeholder="Address, Contract"
         />
         <button
@@ -66,6 +66,6 @@ export default function Search(props: CounterProps) {
           Search
         </button>
       </div>
-    </form>
+    </div>
   );
 }

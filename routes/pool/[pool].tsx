@@ -154,7 +154,7 @@ export default function Transactions(
             <div class={tw`w-1/2`}>
               Price :
             </div>
-            <b>{` 1 💎 = ${price}`}</b>
+            <b>{` ${price}`}🪙</b>
           </div>
           <div class={tw`p-2 text-4l  border-t  flex `}>
             <div class={tw`w-1/2`}>
