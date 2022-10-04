@@ -137,7 +137,7 @@ export default function Transactions(
           <Avatar address={params.address} size={data.seqno ? 225 : 180}>
           </Avatar>
         </div>
-        <div class={tw`p-2`}>
+        <div class={tw`p-2 w-1/2`}>
           <div
             class={tw`p-2 text-4l  `}
             title={new Date(txData.time * 1000).toISOString()}
@@ -154,7 +154,7 @@ export default function Transactions(
             <div class={tw`w-1/2`}>
               Price :
             </div>
-            <b>{` ${price}`}🪙</b>
+            <b>{`${price} 🪙 = 1💎`}</b>
           </div>
           <div class={tw`p-2 text-4l  border-t  flex `}>
             <div class={tw`w-1/2`}>
@@ -181,7 +181,7 @@ export default function Transactions(
             <div class={tw`w-1/2`}>
               Token:
             </div>
-            <b>{nanoToFixed(fromNano(data.tokenReserves), 2)}</b>
+            <b>{nanoToFixed(fromNano(data.tokenReserves), 2)} 🪙</b>
           </div>
           {walletSection}
         </div>
