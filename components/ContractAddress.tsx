@@ -32,7 +32,7 @@ export function ContractAddress(address: string) {
 export function checkAddressInLocalStorage(address: string) {
   // const addressInLocalStorage = localStorage?.getItem(address);
   // return addressInLocalStorage || false;
-  return address;
+  return false;
 }
 
 function addressEllipsis(address: string) {
