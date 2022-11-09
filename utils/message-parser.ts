@@ -50,23 +50,35 @@ function parseJettonInternalTransfer(msg: Cell) {
 //         .store_slice(either_forward_payload)
 
 function parseJettonTransferNotification(msg: Cell) {
-    let slice = msg.beginParse();
-    const op = slice.readUint(32);
-    const query = slice.readUint(64);
-    const amount = slice.readCoins();
-    const from = slice.readAddress();
-    const subOp = slice.readUint(32);
-    const minAmountOut = slice.readCoins();
+    try {
+        let slice = msg.beginParse();
+        const op = slice.readUint(32);
+        const query = slice.readUint(64);
+        const amount = slice.readCoins();
+        const from = slice.readAddress();
+        const subOp = slice.readUint(32);
+        const minAmountOut = slice.readCoins();
 
-    return {
-        "#": subOp.toString() == "12" ? "Swap_Token" : "Add_Liquidity",
-        op: op.toString(16),
-        query: query.toString(10),
-        from: from?.toFriendly(),
-        amount: fromNano(amount),
-        subOp: subOp.toString(),
-        minAmountOut: fromNano(minAmountOut),
-    };
+        return {
+            "#": subOp.toString() == "12" ? "Swap_Token" : "Add_Liquidity",
+            op: op.toString(16),
+            query: query.toString(10),
+            from: from?.toFriendly(),
+            amount: fromNano(amount),
+            subOp: subOp.toString(),
+            minAmountOut: fromNano(minAmountOut),
+        };
+    } catch (e) {
+        return {
+            "#": "NAx",
+            op: "1",
+            query: "1",
+            from: "x",
+            amount: "1",
+            subOp: "x",
+            minAmountOut: "x",
+        };
+    }
 }
 
 function parseBurnNotification(msg: Cell) {
