@@ -87,8 +87,8 @@ function parseBurnNotification(msg: Cell) {
     const query = slice.readUint(64);
     const amount = slice.readCoins();
     const from = slice.readAddress();
-    const subOp = slice.readUint(32);
-    const minAmountOut = slice.readCoins();
+    // const subOp = slice.readUint(32);
+    // const minAmountOut = slice.readCoins();
 
     return {
         "#": "RemoveLiquidity",

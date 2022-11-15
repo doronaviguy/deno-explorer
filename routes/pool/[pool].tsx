@@ -29,6 +29,7 @@ import { MessageBody } from "../../components/MessageBody.tsx";
 import { Footer } from "../../components/Footer.tsx";
 import { PoolMessageBody } from "../../components/PoolMessageBody.tsx";
 import { BN } from "https://cdn.skypack.dev/-/bn.js@v5.2.0-RKfg8jZPSvF22WG62NtP/dist=es2019,mode=imports/optimized/bnjs.js";
+import { parseDexBoc } from "../../utils/message-parser.ts";
 
 interface AddressData {
   wallet: boolean;
@@ -63,7 +64,7 @@ export const handler: Handlers<Transaction[] | null> = {
     const responses = await Promise.all(promises);
 
     let res = responses[1].result;
-    console.log(res);
+    
 
     const totalSupply = hexToBn(res.stack[0][1]);
 
@@ -96,10 +97,20 @@ export default function Transactions(
 
   let tonVol = new BN(0);
   let list = data?.transactions.map((element) => {
-    const msgValue = extractMessageValue(element);
-    console.log({ msgValue: msgValue.toString() });
+    //@ts-ignore
+    let messageData = parseDexBoc(element["in_msg"]["msg_data"]["body"], "base64");
+    console.log(messageData);
+    
+    if(messageData["#"] == "Add_Liquidity" || messageData["#"] == "RemoveLiquidity") {
+      return
+    }
+    
 
-    tonVol = tonVol.add(msgValue);
+    const msgValueIn = extractMessageValue(element);
+    const msgValueOut = extractMessageValueOut(element);
+    console.log({ msgValue: msgValueIn.toString(), msgValueOut: msgValueOut.toString() });
+
+    tonVol = tonVol.add(msgValueIn).add(msgValueOut);
     return <div>{Tx(element, params.address)}</div>;
   });
 
@@ -116,12 +127,23 @@ export default function Transactions(
       </div>
     );
   }
-  const price = nanoToFixed(
-    fromNano(
-      data.tokenReserves.mul(new BN(1e9)).div(data?.tonReserves),
-    ),
-    2,
-  );
+  console.log({
+    tonReserves: data?.tonReserves.toString(),
+    tokenReserves: data?.tokenReserves.toString()
+  });
+  let price = new BN(0);
+  try {
+
+    price = nanoToFixed(
+      fromNano(
+        data?.tokenReserves.mul(new BN(1e9)).div(data?.tonReserves),
+        ),
+        2,
+        );
+      } catch(e) {
+        console.log('bad price');
+        
+      }
   console.log({ price: price.toString() });
   return (
     <div class={tw`p-5 mx-auto max-w-screen-md`}>
@@ -208,6 +230,23 @@ function extractMessageValue(element: any) {
   }
   return new BN(msgValue);
 }
+
+function extractMessageValueOut(element: any) {
+  
+  let msgValue1 = extractValueFromMessage(element["out_msgs"][0]);
+  let msgValue2 = extractValueFromMessage(element["out_msgs"][1]);
+  return msgValue1.add(msgValue2);
+  
+}
+
+function extractValueFromMessage(message: any) {
+  try {
+    return new BN(message["value"]);
+  } catch(e) {
+    return new BN(0);
+  }
+}
+
 
 function Tx(element: any, filter: string) {
   let href = `/tx/` +
