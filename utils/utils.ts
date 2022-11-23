@@ -40,10 +40,9 @@ export async function callTonRPC(bodyJson: string) {
 export function hexToBn(num: string) {
     try {
         return new BN(BigInt(num).toString());
-    }catch(e) {
-        return new BN(0)
+    } catch (e) {
+        return new BN(0);
     }
-    
 }
 
 interface walletData {

@@ -61,10 +61,14 @@ export const handler: Handlers<Transaction[] | null> = {
     `));
 
     promises.push(getWalletInfo(address));
+
+    promises.push(callTonRPC(`
+    {"id":"1","jsonrpc":"2.0","method":"getAddressInformation","params":{"address":"${address.toString()}","stack":[]}}
+    `));
+
     const responses = await Promise.all(promises);
 
     let res = responses[1].result;
-    
 
     const totalSupply = hexToBn(res.stack[0][1]);
 
@@ -75,12 +79,20 @@ export const handler: Handlers<Transaction[] | null> = {
 
     const txs = responses[0].result as Transaction[];
     const walletData = responses[2];
+    console.log(responses[3].result.code);
+
+    const codeHash = Cell.fromBoc(
+      Buffer.from(responses[3].result.code, "base64"),
+    )[0].hash();
+    console.log(codeHash);
+
     //const metadata =  parseJettonMetadata(res.stack[6][1].bytes);
 
     const data = {
       ...walletData.result,
       tonReserves,
       tokenReserves,
+      codeHash: codeHash.toString("base64"),
       transactions: txs,
     } as AddressData;
     return ctx.render(data);
@@ -96,19 +108,45 @@ export default function Transactions(
   const txData = parseTxDetails(data?.transactions[0]);
 
   let tonVol = new BN(0);
+  let soldTon = new BN(0);
+  let soldToken = new BN(0);
+  let addLiquidityVolume = new BN(0);
+  let removeLiquidityVolume = new BN(0);
+
   let list = data?.transactions.map((element) => {
     //@ts-ignore
-    let messageData = parseDexBoc(element["in_msg"]["msg_data"]["body"], "base64");
-    console.log(messageData);
-    
-    if(messageData["#"] == "Add_Liquidity" || messageData["#"] == "RemoveLiquidity") {
-      return
-    }
-    
+    let messageData = parseDexBoc(
+      element["in_msg"]["msg_data"]["body"],
+      "base64",
+    );
+    let msgValueIn = extractMessageValue(element);
+    let msgValueOut = extractMessageValueOut(element);
 
-    const msgValueIn = extractMessageValue(element);
-    const msgValueOut = extractMessageValueOut(element);
-    console.log({ msgValue: msgValueIn.toString(), msgValueOut: msgValueOut.toString() });
+    // exclude liquidity operations form volume
+    if (
+      messageData["#"] == "Add_Liquidity" ||
+      messageData["#"] == "RemoveLiquidity"
+    ) {
+      if (messageData["#"] == "Add_Liquidity") {
+        addLiquidityVolume = addLiquidityVolume.add(msgValueIn);
+      }
+
+      if (messageData["#"] == "RemoveLiquidity") {
+        removeLiquidityVolume = removeLiquidityVolume.add(msgValueOut);
+      }
+      msgValueIn = new BN(0);
+      msgValueOut = new BN(0);
+    }
+
+    if (messageData["#"] == "SwapTON") {
+      soldTon = soldTon.add(msgValueIn);
+    }
+
+    if (messageData["#"] == "Swap_Token") {
+      console.log("minAmountOut", messageData.amount);
+
+      soldToken = soldToken.add(toNano(messageData.amount));
+    }
 
     tonVol = tonVol.add(msgValueIn).add(msgValueOut);
     return <div>{Tx(element, params.address)}</div>;
@@ -129,21 +167,19 @@ export default function Transactions(
   }
   console.log({
     tonReserves: data?.tonReserves.toString(),
-    tokenReserves: data?.tokenReserves.toString()
+    tokenReserves: data?.tokenReserves.toString(),
   });
   let price = new BN(0);
   try {
-
     price = nanoToFixed(
       fromNano(
         data?.tokenReserves.mul(new BN(1e9)).div(data?.tonReserves),
-        ),
-        2,
-        );
-      } catch(e) {
-        console.log('bad price');
-        
-      }
+      ),
+      2,
+    );
+  } catch (e) {
+    console.log("bad price");
+  }
   console.log({ price: price.toString() });
   return (
     <div class={tw`p-5 mx-auto max-w-screen-md`}>
@@ -168,7 +204,8 @@ export default function Transactions(
           </div>
           <div class={tw`p-2 text-4l  border-t `}>
             <div>
-              State: <b>{data.account_state}</b>
+              State: <b>{data.account_state}</b> | code hash:{" "}
+              <pre>{data.codeHash}</pre>
             </div>
           </div>
 
@@ -178,12 +215,6 @@ export default function Transactions(
             </div>
             <b>{`${price} 🪙 = 1💎`}</b>
           </div>
-          <div class={tw`p-2 text-4l  border-t  flex `}>
-            <div class={tw`w-1/2`}>
-              Volume:
-            </div>
-            <b>{nanoToFixed(fromNano(tonVol), 2)} 💎</b>
-          </div>
           <div class={tw`p-2 text-4l  border-t  flex border-b `}>
             <div class={tw`w-1/2`}>
               Value:
@@ -191,7 +222,40 @@ export default function Transactions(
             <b>{nanoToFixed(fromNano(data?.balance), 2)} 💎</b>
           </div>
           <div class={tw`p-2 text-4l  border-t `}>
-            <b>Reserves</b>
+            <b>Volume</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Liquidity Added
+            </div>
+            <b>{nanoToFixed(fromNano(addLiquidityVolume), 2)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Liquidity Removed
+            </div>
+            <b>{nanoToFixed(fromNano(removeLiquidityVolume), 2)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Swaps:
+            </div>
+            <b>{nanoToFixed(fromNano(tonVol), 2)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Sold Ton:
+            </div>
+            <b>{nanoToFixed(fromNano(soldTon), 2)} 💎</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t  flex `}>
+            <div class={tw`w-1/2`}>
+              Sold Token:
+            </div>
+            <b>{nanoToFixed(fromNano(soldToken), 2)} 🪙</b>
+          </div>
+          <div class={tw`p-2 text-4l  border-t `}>
+            <b>Pool Reserves</b>
           </div>
           <div class={tw`p-2 text-4l flex `}>
             <div class={tw`w-1/2`}>
@@ -232,21 +296,18 @@ function extractMessageValue(element: any) {
 }
 
 function extractMessageValueOut(element: any) {
-  
   let msgValue1 = extractValueFromMessage(element["out_msgs"][0]);
   let msgValue2 = extractValueFromMessage(element["out_msgs"][1]);
   return msgValue1.add(msgValue2);
-  
 }
 
 function extractValueFromMessage(message: any) {
   try {
     return new BN(message["value"]);
-  } catch(e) {
+  } catch (e) {
     return new BN(0);
   }
 }
-
 
 function Tx(element: any, filter: string) {
   let href = `/tx/` +

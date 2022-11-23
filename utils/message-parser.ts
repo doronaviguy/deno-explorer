@@ -57,16 +57,22 @@ function parseJettonTransferNotification(msg: Cell) {
         const amount = slice.readCoins();
         const from = slice.readAddress();
         const subOp = slice.readUint(32);
+        let slippage = 0;
+        const action = subOp.toString() == "12" ? "Swap_Token" : "Add_Liquidity";
+        // if(action == "Add_Liquidity") {
+        //     slippage = slice.readUint(32)
+        // }
         const minAmountOut = slice.readCoins();
 
         return {
-            "#": subOp.toString() == "12" ? "Swap_Token" : "Add_Liquidity",
+            "#": action,
             op: op.toString(16),
             query: query.toString(10),
             from: from?.toFriendly(),
             amount: fromNano(amount),
             subOp: subOp.toString(),
-            minAmountOut: fromNano(minAmountOut),
+            minAmountOut: minAmountOut,
+            slippage: slippage.toString()
         };
     } catch (e) {
         return {
