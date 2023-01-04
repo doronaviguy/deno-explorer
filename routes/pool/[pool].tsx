@@ -55,9 +55,14 @@ export const handler: Handlers<Transaction[] | null> = {
     promises.push(callTonRPC(
       `{"id":"1","jsonrpc":"2.0","method":"getTransactions","params":{"address":"${address.toString()}","limit":200}}`,
     ));
+    // handle old pool
+    const poolApi =
+      ctx.params.pool == "EQB3jfFvpzv8ZC0CjFgxX4-d1XsoZaVJ3mlfp8EfFdrpqqzt"
+        ? "get_jetton_data"
+        : "get_pool_data";
 
     promises.push(callTonRPC(`
-    {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"${address.toString()}","method":"get_jetton_data","stack":[]}}
+    {"id":"1","jsonrpc":"2.0","method":"runGetMethod","params":{"address":"${address.toString()}","method":"${poolApi}","stack":[]}}
     `));
 
     promises.push(getWalletInfo(address));
@@ -72,7 +77,12 @@ export const handler: Handlers<Transaction[] | null> = {
 
     const totalSupply = hexToBn(res.stack[0][1]);
 
-    const jettonWalletAddressBytes = res.stack[2][1].bytes as string;
+    const jettonWalletAddressBytes = res.stack[2][1].bytes as Buffer;
+    console.log(
+      "jettonWalletAddressBytes",
+      jettonWalletAddressBytes.toString("base64"),
+    );
+
     const tonReserves = hexToBn(res.stack[3][1]);
     const tokenReserves = hexToBn(res.stack[4][1]);
     const admin = res.stack[5][1].bytes as string;
@@ -143,7 +153,7 @@ export default function Transactions(
     }
 
     if (messageData["#"] == "Swap_Token") {
-      console.log("minAmountOut", messageData.amount);
+      //  console.log("minAmountOut", messageData.amount);
 
       soldToken = soldToken.add(toNano(messageData.amount));
     }
